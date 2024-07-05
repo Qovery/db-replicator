@@ -32,13 +32,13 @@ specific use case of an ETL, where an ETL is more generic.
 absolutely,
 
 ```shell
-cat dump.sql | replibyte -c conf.yaml backup run -s postgres -i
+cat dump.sql | replibyte -c conf.yaml dump create -s postgres -i
 ```
 
 and
 
 ```shell
-replibyte -c conf.yaml backup run -s postgres -f dump.sql
+replibyte -c conf.yaml dump create -s postgres -f dump.sql
 ```
 
 ### How RepliByte can list the dumps? Is there an API?
