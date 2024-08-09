@@ -42,10 +42,14 @@ FROM debian:buster-slim
 LABEL org.opencontainers.image.source https://github.com/qovery/replibyte
 
 # Install Postgres and MySQL binaries
-RUN apt-get clean && apt-get update && apt-get install -y \
-    wget \
-    postgresql-client \
-    default-mysql-client
+RUN apt-get clean && apt-get update
+RUN apt-get install -y wget gnupg2 lsb-release
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee  /etc/apt/sources.list.d/pgdg.list
+
+RUN apt-get update
+RUN apt-get install -y postgresql-client-13
 
 # Install MongoDB tools
 RUN wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-debian92-x86_64-100.5.2.deb && \
