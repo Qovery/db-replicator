@@ -110,7 +110,7 @@ pub struct DumpCreateArgs {
     /// dump name
     #[clap(short, long)]
     pub name: Option<String>,
-    /// chunk size, default to 100
+    /// page chunk size, default to 100 MB
     #[clap(short, long)]
     pub chunk_size: Option<usize>,
 }
