@@ -581,6 +581,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         assert!(p.read(source_options, |original_query, query| {}).is_ok());
@@ -593,6 +594,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         assert!(p.read(source_options, |original_query, query| {}).is_err());
@@ -608,6 +610,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         let _ = p.read(source_options, |original_query, query| {
@@ -734,6 +737,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         let _ = p.read(source_options, |original_query, query| {
@@ -775,6 +779,7 @@ mod tests {
             skip_config: &skip_config,
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         let _ = p.read(source_options, |_original_query, query| {
@@ -826,6 +831,7 @@ mod tests {
                 passthrough_tables: None,
             }),
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         let mut rows_percent_50 = vec![];
@@ -863,6 +869,7 @@ mod tests {
                 passthrough_tables: None,
             }),
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         let mut rows_percent_30 = vec![];

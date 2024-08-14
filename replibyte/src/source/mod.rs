@@ -29,4 +29,5 @@ pub struct SourceOptions<'a> {
     pub skip_config: &'a Vec<SkipConfig>,
     pub database_subset: &'a Option<DatabaseSubsetConfig>,
     pub only_tables: &'a Vec<OnlyTablesConfig>,
+    pub chunk_size: &'a Option<usize>,
 }

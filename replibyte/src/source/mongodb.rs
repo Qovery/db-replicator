@@ -368,6 +368,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         assert!(p.read(source_options, |_, _| {}).is_ok());
@@ -380,6 +381,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         assert!(p.read(source_options, |_, _| {}).is_err());
@@ -395,6 +397,7 @@ mod tests {
             skip_config: &vec![],
             database_subset: &None,
             only_tables: &vec![],
+            chunk_size: &None,
         };
 
         p.read(source_options, |original_query, query| {
