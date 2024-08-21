@@ -1,7 +1,7 @@
 use crate::dedup::does_line_exist_and_set;
 use crate::postgres::SupersetStrategy::RandomPercent;
 use crate::{
-    utils, PassthroughTable, Progress, Superset, SupersetOptions, SupersetTable, SupersetTableRelation,
+    utils, PassthroughTableSuperSet, Progress, Superset, SupersetOptions, SupersetTable, SupersetTableRelation,
 };
 use dump_parser::postgres::{
     get_column_names_from_insert_into_query, get_column_values_str_from_insert_into_query,
@@ -120,7 +120,7 @@ impl<'a> PostgresSuperset<'a> {
             || !self
                 .superset_options
                 .passthrough_tables
-                .contains(&PassthroughTable::new(
+                .contains(&PassthroughTableSuperSet::new(
                     row_database.as_str(),
                     row_table.as_str(),
                 ))
@@ -742,7 +742,7 @@ mod tests {
         list_percent_of_insert_into_rows, table_stats_by_database_and_table_name, PostgresSuperset,
         SupersetStrategy,
     };
-    use crate::{PassthroughTable, Superset, SupersetOptions};
+    use crate::{PassthroughTableSuperSet, Superset, SupersetOptions};
     use dump_parser::postgres::Tokenizer;
     use std::collections::HashSet;
     use std::fs::File;
@@ -918,7 +918,7 @@ ALTER TABLE ONLY public.territories
     fn check_postgres_superset() {
         let path = dump_path();
         let mut s = HashSet::new();
-        s.insert(PassthroughTable::new("public", "us_states"));
+        s.insert(PassthroughTableSuperSet::new("public", "us_states"));
 
         let postgres_superset = PostgresSuperset::new(
             path.as_path(),

@@ -16,8 +16,9 @@ use dump_parser::postgres::{
 use dump_parser::utils::{list_sql_queries_from_dump_reader, ListQueryResult};
 use subset::postgres::{PostgresSubset, SubsetStrategy};
 use subset::{PassthroughTable, Subset, SubsetOptions};
+
 use superset::postgres::{PostgresSuperset, SupersetStrategy};
-use superset::{PassthroughTable, Superset, SupersetOptions};
+use superset::{PassthroughTableSuperSet, Superset, SupersetOptions};
 
 use crate::config::DatabaseScaleConfigStrategy;
 use crate::connector::Connector;
@@ -168,8 +169,7 @@ impl<'a> Source for Postgres<'a> {
                         let reader = superset(dump_reader, superset_config)?;
                         read_and_transform(reader, options, query_callback);
                     }
-                let reader = BufReader::new(stdout);
-                read_and_transform(reader, options, query_callback);
+                }
             }
             Some(subset_config) => {
                 let dump_reader = BufReader::new(stdout);
@@ -254,7 +254,7 @@ pub fn superset<R: Read>(
         .as_ref()
         .unwrap_or(&empty_vec)
         .iter()
-        .map(|table| PassthroughTable::new(superset_config.database.as_str(), table.as_str()))
+        .map(|table| PassthroughTableSuperSet::new(superset_config.database.as_str(), table.as_str()))
         .collect::<HashSet<_>>();
 
     let superset_options = SupersetOptions::new(&passthrough_tables);

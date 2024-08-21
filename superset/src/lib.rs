@@ -30,14 +30,14 @@ impl Progress {
 }
 
 #[derive(Debug, Hash, Eq, PartialEq)]
-pub struct PassthroughTable<'a> {
+pub struct PassthroughTableSuperSet<'a> {
     pub database: &'a str,
     pub table: &'a str,
 }
 
-impl<'a> PassthroughTable<'a> {
+impl<'a> PassthroughTableSuperSet<'a> {
     pub fn new<S: Into<&'a str>>(database: S, table: S) -> Self {
-        PassthroughTable {
+        PassthroughTableSuperSet {
             database: database.into(),
             table: table.into(),
         }
@@ -45,11 +45,11 @@ impl<'a> PassthroughTable<'a> {
 }
 
 pub struct SupersetOptions<'a> {
-    pub passthrough_tables: &'a HashSet<PassthroughTable<'a>>,
+    pub passthrough_tables: &'a HashSet<PassthroughTableSuperSet<'a>>,
 }
 
 impl<'a> SupersetOptions<'a> {
-    pub fn new(passthrough_tables: &'a HashSet<PassthroughTable<'a>>) -> Self {
+    pub fn new(passthrough_tables: &'a HashSet<PassthroughTableSuperSet<'a>>) -> Self {
         SupersetOptions { passthrough_tables }
     }
 }
