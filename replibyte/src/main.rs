@@ -14,7 +14,7 @@ use migration::{migrations, Migrator};
 use utils::get_replibyte_version;
 
 use crate::cli::{DumpCommand, RestoreCommand, SubCommand, TransformerCommand, CLI, SourceCommand};
-use crate::config::{Config, DatabaseSubsetConfig, DatastoreConfig};
+use crate::config::{Config, DatabaseSubsetConfig, DatabaseSupersetConfig, DatastoreConfig};
 use crate::datastore::local_disk::LocalDisk;
 use crate::datastore::s3::S3;
 use crate::datastore::Datastore;

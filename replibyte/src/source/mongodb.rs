@@ -73,6 +73,10 @@ impl<'a> Source for MongoDB<'a> {
             todo!("database subset not supported yet for MongoDB source")
         }
 
+        if let Some(_database_superset) = &options.database_superset {
+            todo!("database superset not supported yet for MongoDB source")
+        }
+
         let dump_args = vec![
             "--uri",
             self.uri,
@@ -367,6 +371,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 
@@ -379,6 +384,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 
@@ -394,6 +400,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 

@@ -1,6 +1,6 @@
 use std::io::Error;
 
-use crate::config::{DatabaseSubsetConfig, OnlyTablesConfig, SkipConfig};
+use crate::config::{DatabaseSubsetConfig, DatabaseSupersetConfig, OnlyTablesConfig, SkipConfig};
 use crate::connector::Connector;
 use crate::transformer::Transformer;
 use crate::types::{OriginalQuery, Query};
@@ -27,6 +27,7 @@ pub trait Source: Connector {
 pub struct SourceOptions<'a> {
     pub transformers: &'a Vec<Box<dyn Transformer>>,
     pub skip_config: &'a Vec<SkipConfig>,
+    pub database_superset: &'a Option<DatabaseSupersetConfig>,
     pub database_subset: &'a Option<DatabaseSubsetConfig>,
     pub only_tables: &'a Vec<OnlyTablesConfig>,
 }

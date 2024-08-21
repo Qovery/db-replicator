@@ -17,6 +17,7 @@ COPY ./dump-parser ./dump-parser
 
 # subset
 COPY ./subset ./subset
+COPY ./superset ./superset
 
 # replibyte
 COPY ./replibyte/Cargo.toml ./replibyte/Cargo.toml
@@ -30,6 +31,7 @@ RUN rm src/*.rs
 COPY ./replibyte/src ./replibyte/src
 COPY ./dump-parser/src ./dump-parser/src
 COPY ./subset/src ./subset/src
+COPY ./superset/src ./superset/src
 
 # build for release
 RUN rm ./target/release/deps/replibyte*

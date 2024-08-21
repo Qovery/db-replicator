@@ -131,6 +131,7 @@ where
                 transformers: &transformers,
                 skip_config: &skip_config,
                 database_subset: &source.database_subset,
+                database_superset: &source.database_superset,
                 only_tables: &only_tables_config,
             };
 

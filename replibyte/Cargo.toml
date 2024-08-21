@@ -9,6 +9,7 @@ authors = ["Qovery Team", "Fab", "Benny", "Contributos"]
 [dependencies]
 dump-parser = { path = "../dump-parser" }
 subset = { path = "../subset" }
+superset = { path = "../superset" }
 rand = "0.8.5"
 anyhow = "1.0.56"
 serde_yaml = "0.8"

@@ -455,6 +455,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 
@@ -467,6 +468,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
         assert!(p
