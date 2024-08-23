@@ -152,11 +152,11 @@ fn run(config: Config, sub_commands: &SubCommand) -> anyhow::Result<()> {
                 RestoreCommand::Remote(args) => if args.output {},
             },
             _ => {
-                let _ = thread::spawn(move || show_progress_bar(rx_pb));
+                // let _ = thread::spawn(move || show_progress_bar(rx_pb));
             }
         },
         _ => {
-            let _ = thread::spawn(move || show_progress_bar(rx_pb));
+            // let _ = thread::spawn(move || show_progress_bar(rx_pb));
         }
     };
 
@@ -174,7 +174,6 @@ fn run(config: Config, sub_commands: &SubCommand) -> anyhow::Result<()> {
                 if let Some(name) = &args.name {
                     datastore.set_dump_name(name.to_string());
                 }
-
                 commands::dump::run(args, datastore, config, progress_callback)
             }
             DumpCommand::Delete(args) => commands::dump::delete(datastore, args),

@@ -160,13 +160,13 @@ impl<'a> Source for Postgres<'a> {
         match &options.database_subset {
             None => {
                 match &options.database_superset {
-                    None => {
-                        let reader = BufReader::new(stdout);
-                        read_and_transform(reader, options, query_callback);
-                    }
                     Some(superset_config) => {
                         let dump_reader = BufReader::new(stdout);
                         let reader = superset(dump_reader, superset_config)?;
+                        read_and_transform(reader, options, query_callback);
+                    }
+                    _ => {
+                        let reader = BufReader::new(stdout);
                         read_and_transform(reader, options, query_callback);
                     }
                 }
@@ -263,19 +263,20 @@ pub fn superset<R: Read>(
     let named_superset_file = tempfile::NamedTempFile::new()?;
     let mut superset_file = named_superset_file.as_file();
 
-    let _ = superset.read(
-        |row| {
-            match superset_file.write(format!("{}\n", row).as_bytes()) {
-                Ok(_) => {}
-                Err(err) => {
-                    panic!("{}", err)
-                }
-            };
-        },
-        |progress| {
-            info!("Database superset completion: {}%", progress.percent());
-        },
-    )?;
+    // let _ = superset.read(
+    //     |row| {
+    //         println!("{} \n new row",row);
+    //         match superset_file.write(format!("{}\n", row).as_bytes()) {
+    //             Ok(_) => {}
+    //             Err(err) => {
+    //                 panic!("{}", err)
+    //             }
+    //         };
+    //     },
+    //     |progress| {
+    //         info!("Database superset completion: {}%", progress.percent());
+    //     },
+    // )?;
 
     Ok(BufReader::new(
         File::open(named_superset_file.path()).unwrap(),

@@ -192,6 +192,7 @@ impl<'a> Superset for PostgresSuperset<'a> {
         let _ = read(
             self,
             |line| {
+                println!("{}",line);
                 if line.contains("INSERT INTO") {
                     // Dedup INSERT INTO queries
                     // check if the line has not already been sent
