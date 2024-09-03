@@ -9,3 +9,4 @@ edition = "2021"
 dump-parser = { path = "../dump-parser" }
 tempfile = "3.3"
 md5 = "0.7"
+peak_alloc = "0.2.0"

@@ -163,7 +163,9 @@ impl<'a> Source for Postgres<'a> {
                     Some(superset_config) => {
                         let dump_reader = BufReader::new(stdout);
                         let reader = superset(dump_reader, superset_config)?;
-                        read_and_transform(reader, options, query_callback);
+                        println!("superset read done");
+                        // read_and_transform(reader, options, query_callback);
+                        println!("read_and_transform done");
                     }
                     _ => {
                         let reader = BufReader::new(stdout);
@@ -226,7 +228,6 @@ pub fn subset<R: Read>(
             info!("Database subset completion: {}%", progress.percent());
         },
     )?;
-
     Ok(BufReader::new(
         File::open(named_subset_file.path()).unwrap(),
     ))
@@ -262,21 +263,22 @@ pub fn superset<R: Read>(
 
     let named_superset_file = tempfile::NamedTempFile::new()?;
     let mut superset_file = named_superset_file.as_file();
+    println!("superset begin");
 
-    // let _ = superset.read(
-    //     |row| {
-    //         println!("{} \n new row",row);
-    //         match superset_file.write(format!("{}\n", row).as_bytes()) {
-    //             Ok(_) => {}
-    //             Err(err) => {
-    //                 panic!("{}", err)
-    //             }
-    //         };
-    //     },
-    //     |progress| {
-    //         info!("Database superset completion: {}%", progress.percent());
-    //     },
-    // )?;
+    let _ = superset.read(
+        |row| {
+            match superset_file.write(format!("{}\n", row).as_bytes()) {
+                Ok(_) => {}
+                Err(err) => {
+                    panic!("{}", err)
+                }
+            };
+        },
+        |progress| {
+            info!("Database superset completion: {}%", progress.percent());
+        },
+    )?;
+    println!("superset done");
 
     Ok(BufReader::new(
         File::open(named_superset_file.path()).unwrap(),
@@ -361,7 +363,7 @@ pub fn read_and_transform<R: Read, F: FnMut(OriginalQuery, Query)>(
                 no_change_query_callback(query_callback.borrow_mut(), query);
             }
         }
-
+        println!("list_sql_queries_from_dump_reader row done");
         ListQueryResult::Continue
     }) {
         Ok(_) => {}

@@ -9,14 +9,18 @@ use dump_parser::postgres::{
     trim_pre_whitespaces, Keyword, Token,
 };
 use dump_parser::utils::{list_sql_queries_from_dump_reader, ListQueryResult};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufReader, Error, ErrorKind, Read};
 use std::ops::Index;
 use std::path::Path;
+use peak_alloc::PeakAlloc;
 
 type Database = String;
 type Table = String;
+
+#[global_allocator]
+static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 #[derive(Debug)]
 struct ForeignKey {
@@ -28,6 +32,7 @@ struct ForeignKey {
     to_property: String,
 }
 
+#[derive(Debug)]
 struct TableStats {
     database: String,
     table: String,
@@ -106,7 +111,17 @@ impl<'a> PostgresSuperset<'a> {
         row: String,
         table_stats: &HashMap<(Database, Table), TableStats>,
         data: &mut F,
+        visited: &mut HashSet<String>,
     ) -> Result<(), Error> {
+
+        // Check if the row has already been visited
+        if visited.contains(&row) {
+            return Ok(()); // If visited, skip further processing
+        }
+
+        // Mark this row as visited
+        visited.insert(row.clone());
+
         data(format!("{}\n", row));
 
         // tokenize `INSERT INTO ...` row
@@ -147,18 +162,27 @@ impl<'a> PostgresSuperset<'a> {
 
             let database_and_table_tuple =
                 (row_relation.database.clone(), row_relation.table.clone());
+            // println!("row_relation {:?}", row_relation);
 
             // find the table stats for this row
             let row_relation_table_stats = table_stats.get(&database_and_table_tuple).unwrap();
+            // println!("row_relation_table_stats {:?}", row_relation_table_stats);
 
-            // TODO break acyclic graph
-            let row_clb = |row: &str| match self.visits(row.to_string(), table_stats, data) {
+            if row_relation_table_stats.total_rows == 0usize
+            {
+                // println!("row_relation_table_stats total_rows 0");
+                continue
+            }
+            // println!("row_clb visit");
+
+            // break acyclic graph
+            let row_clb = |row: &str| match self.visits(row.to_string(), table_stats, data, visited) {
                 Ok(_) => {}
                 Err(err) => {
                     panic!("{}", err);
                 }
             };
-
+            // println!("row_clb visit subdone");
             let _ = filter_insert_into_rows(
                 row_relation.to_property.as_str(),
                 value.as_str(),
@@ -166,6 +190,8 @@ impl<'a> PostgresSuperset<'a> {
                 row_relation_table_stats,
                 row_clb,
             )?;
+            // println!("filter_insert_into_rows done");
+
         }
 
         Ok(())
@@ -255,8 +281,14 @@ fn read<F: FnMut(String), P: FnMut(Progress)>(
 
     // send INSERT INTO rows
     for row in rows {
+        println!("filter_insert_into_rows_list_query");
+        let current_mem = PEAK_ALLOC.current_usage_as_mb();
+        println!("This program currently uses {} MB of RAM.", current_mem);
+        let peak_mem = PEAK_ALLOC.peak_usage_as_gb();
+        println!("The max amount that was used {}", peak_mem);
         let start_time = utils::epoch_millis();
-        let _ = postgres_superset.visits(row, &table_stats, &mut data)?;
+        let mut visited = HashSet::new();
+        let _ = postgres_superset.visits(row, &table_stats, &mut data, &mut visited)?;
 
         processed_rows += 1;
 
@@ -266,8 +298,8 @@ fn read<F: FnMut(String), P: FnMut(Progress)>(
             processed_rows,
             last_process_time: utils::epoch_millis() - start_time,
         });
+        visited.clear();
     }
-
     for passthrough_table in postgres_superset.superset_options.passthrough_tables {
         // copy all rows from passthrough tables
         for table_stats in &table_stats_values {
