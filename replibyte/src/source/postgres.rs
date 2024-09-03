@@ -17,13 +17,17 @@ use dump_parser::utils::{list_sql_queries_from_dump_reader, ListQueryResult};
 use subset::postgres::{PostgresSubset, SubsetStrategy};
 use subset::{PassthroughTable, Subset, SubsetOptions};
 
-use crate::config::DatabaseSubsetConfigStrategy;
+use superset::postgres::{PostgresSuperset, SupersetStrategy};
+use superset::{PassthroughTableSuperSet, Superset, SupersetOptions};
+
+use crate::config::DatabaseScaleConfigStrategy;
 use crate::connector::Connector;
 use crate::source::{Explain, Source};
 use crate::transformer::Transformer;
 use crate::types::{Column, InsertIntoQuery, OriginalQuery, Query};
 use crate::utils::{binary_exists, table, wait_for_command};
 use crate::DatabaseSubsetConfig;
+use crate::DatabaseSupersetConfig;
 
 use super::SourceOptions;
 
@@ -155,8 +159,19 @@ impl<'a> Source for Postgres<'a> {
 
         match &options.database_subset {
             None => {
-                let reader = BufReader::new(stdout);
-                read_and_transform(reader, options, query_callback);
+                match &options.database_superset {
+                    Some(superset_config) => {
+                        let dump_reader = BufReader::new(stdout);
+                        let reader = superset(dump_reader, superset_config)?;
+                        println!("superset read done");
+                        // read_and_transform(reader, options, query_callback);
+                        println!("read_and_transform done");
+                    }
+                    _ => {
+                        let reader = BufReader::new(stdout);
+                        read_and_transform(reader, options, query_callback);
+                    }
+                }
             }
             Some(subset_config) => {
                 let dump_reader = BufReader::new(stdout);
@@ -178,7 +193,7 @@ pub fn subset<R: Read>(
     let _ = io::copy(&mut dump_reader, &mut temp_dump_file)?;
 
     let strategy = match subset_config.strategy {
-        DatabaseSubsetConfigStrategy::Random(opt) => SubsetStrategy::RandomPercent {
+        DatabaseScaleConfigStrategy::Random(opt) => SubsetStrategy::RandomPercent {
             database: subset_config.database.as_str(),
             table: subset_config.table.as_str(),
             percent: opt.percent,
@@ -213,9 +228,60 @@ pub fn subset<R: Read>(
             info!("Database subset completion: {}%", progress.percent());
         },
     )?;
-
     Ok(BufReader::new(
         File::open(named_subset_file.path()).unwrap(),
+    ))
+}
+
+pub fn superset<R: Read>(
+    mut dump_reader: BufReader<R>,
+    superset_config: &DatabaseSupersetConfig,
+) -> Result<BufReader<File>, Error> {
+    let mut named_temp_file = tempfile::NamedTempFile::new()?;
+    let mut temp_dump_file = named_temp_file.as_file_mut();
+    let _ = io::copy(&mut dump_reader, &mut temp_dump_file)?;
+
+    let strategy = match superset_config.strategy {
+        DatabaseScaleConfigStrategy::Random(opt) => SupersetStrategy::RandomPercent {
+            database: superset_config.database.as_str(),
+            table: superset_config.table.as_str(),
+            percent: opt.percent,
+        },
+    };
+
+    let empty_vec = Vec::new();
+    let passthrough_tables = superset_config
+        .passthrough_tables
+        .as_ref()
+        .unwrap_or(&empty_vec)
+        .iter()
+        .map(|table| PassthroughTableSuperSet::new(superset_config.database.as_str(), table.as_str()))
+        .collect::<HashSet<_>>();
+
+    let superset_options = SupersetOptions::new(&passthrough_tables);
+    let superset = PostgresSuperset::new(named_temp_file.path(), strategy, superset_options)?;
+
+    let named_superset_file = tempfile::NamedTempFile::new()?;
+    let mut superset_file = named_superset_file.as_file();
+    println!("superset begin");
+
+    let _ = superset.read(
+        |row| {
+            match superset_file.write(format!("{}\n", row).as_bytes()) {
+                Ok(_) => {}
+                Err(err) => {
+                    panic!("{}", err)
+                }
+            };
+        },
+        |progress| {
+            info!("Database superset completion: {}%", progress.percent());
+        },
+    )?;
+    println!("superset done");
+
+    Ok(BufReader::new(
+        File::open(named_superset_file.path()).unwrap(),
     ))
 }
 
@@ -297,7 +363,7 @@ pub fn read_and_transform<R: Read, F: FnMut(OriginalQuery, Query)>(
                 no_change_query_callback(query_callback.borrow_mut(), query);
             }
         }
-
+        println!("list_sql_queries_from_dump_reader row done");
         ListQueryResult::Continue
     }) {
         Ok(_) => {}
@@ -552,7 +618,7 @@ mod tests {
     use std::vec;
 
     use crate::config::{
-        DatabaseSubsetConfig, DatabaseSubsetConfigStrategy, DatabaseSubsetConfigStrategyRandom,
+        DatabaseSubsetConfig, DatabaseScaleConfigStrategy, DatabaseScaleConfigStrategyRandom,
         SkipConfig,
     };
     use crate::source::postgres::{to_query, Postgres};
@@ -820,8 +886,8 @@ mod tests {
             database_subset: &Some(DatabaseSubsetConfig {
                 database: "public".to_string(),
                 table: "orders".to_string(),
-                strategy: DatabaseSubsetConfigStrategy::Random(
-                    DatabaseSubsetConfigStrategyRandom { percent: 50 },
+                strategy: DatabaseScaleConfigStrategy::Random(
+                    DatabaseScaleConfigStrategyRandom { percent: 50 },
                 ),
                 passthrough_tables: None,
             }),
@@ -857,8 +923,8 @@ mod tests {
             database_subset: &Some(DatabaseSubsetConfig {
                 database: "public".to_string(),
                 table: "orders".to_string(),
-                strategy: DatabaseSubsetConfigStrategy::Random(
-                    DatabaseSubsetConfigStrategyRandom { percent: 30 },
+                strategy: DatabaseScaleConfigStrategy::Random(
+                    DatabaseScaleConfigStrategyRandom { percent: 30 },
                 ),
                 passthrough_tables: None,
             }),

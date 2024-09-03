@@ -11,7 +11,7 @@ use crate::SourceOptions;
 
 use bson::{Bson, Document};
 use dump_parser::mongodb::Archive;
-use mongodb_schema_parser::SchemaParser;
+// use mongodb_schema_parser::SchemaParser;
 
 pub struct MongoDB<'a> {
     uri: &'a str,
@@ -71,6 +71,10 @@ impl<'a> Source for MongoDB<'a> {
     ) -> Result<(), Error> {
         if let Some(_database_subset) = &options.database_subset {
             todo!("database subset not supported yet for MongoDB source")
+        }
+
+        if let Some(_database_superset) = &options.database_superset {
+            todo!("database superset not supported yet for MongoDB source")
         }
 
         let dump_args = vec![
@@ -308,20 +312,20 @@ pub fn read_and_parse_schema<R: Read>(reader: BufReader<R>) -> Result<(), Error>
 
             table.set_titles(row![format!("Collection {}", name)]);
 
-            let mut schema_parser = SchemaParser::new();
+            // let mut schema_parser = SchemaParser::new();
 
-            for doc in collection {
-                schema_parser.write_bson(doc).unwrap();
-            }
+            // for doc in collection {
+            //     schema_parser.write_bson(doc).unwrap();
+            // }
 
-            let schema = schema_parser.flush();
+            // let schema = schema_parser.flush();
 
-            let json_data = serde_json::to_string_pretty(&schema).unwrap();
+            // let json_data = serde_json::to_string_pretty(&schema).unwrap();
 
-            table.add_row(row![name]);
-            table.add_row(row![json_data]);
+            // table.add_row(row![name]);
+            // table.add_row(row![json_data]);
 
-            let _ = table.printstd();
+            // let _ = table.printstd();
         }
     });
 
@@ -367,6 +371,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 
@@ -379,6 +384,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 
@@ -394,6 +400,7 @@ mod tests {
             transformers: &transformers,
             skip_config: &vec![],
             database_subset: &None,
+            database_superset: &None,
             only_tables: &vec![],
         };
 

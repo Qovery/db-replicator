@@ -203,6 +203,7 @@ pub struct SourceConfig {
     pub transformers: Option<Vec<TransformerConfig>>,
     pub skip: Option<Vec<SkipConfig>>,
     pub database_subset: Option<DatabaseSubsetConfig>,
+    pub database_superset: Option<DatabaseSupersetConfig>,
     pub only_tables: Option<Vec<OnlyTablesConfig>>,
 }
 
@@ -241,8 +242,18 @@ pub struct DatabaseSubsetConfig {
     pub database: String,
     pub table: String,
     #[serde(flatten)]
-    pub strategy: DatabaseSubsetConfigStrategy,
+    pub strategy: DatabaseScaleConfigStrategy,
     // copy the entire table - not affected by the subset algorithm
+    pub passthrough_tables: Option<Vec<String>>,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub struct DatabaseSupersetConfig {
+    pub database: String,
+    pub table: String,
+    #[serde(flatten)]
+    pub strategy: DatabaseScaleConfigStrategy,
+    // copy the entire table - not affected by the superset algorithm
     pub passthrough_tables: Option<Vec<String>>,
 }
 
@@ -255,12 +266,12 @@ pub struct OnlyTablesConfig {
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "strategy_name", content = "strategy_options")]
-pub enum DatabaseSubsetConfigStrategy {
-    Random(DatabaseSubsetConfigStrategyRandom),
+pub enum DatabaseScaleConfigStrategy {
+    Random(DatabaseScaleConfigStrategyRandom),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
-pub struct DatabaseSubsetConfigStrategyRandom {
+pub struct DatabaseScaleConfigStrategyRandom {
     pub percent: u8,
 }
 

@@ -164,6 +164,7 @@ fn list_statements(query: &str) -> Vec<Statement> {
 
     let mut is_statement_complete = true;
     let mut is_comment_line = false;
+    let mut is_block_comment_line = false;
     let mut is_partial_comment_line = false;
     let mut start_index = 0usize;
     let mut previous_chars_are_whitespaces = true;
@@ -186,7 +187,7 @@ fn list_statements(query: &str) -> Vec<Statement> {
                 is_comment_line = false;
                 previous_chars_are_whitespaces = true;
             }
-            b'\'' if !is_comment_line && !is_partial_comment_line => {
+            b'\'' if !is_comment_line && !is_partial_comment_line && !is_block_comment_line => {
                 if stack.get(0) == Some(&b'\'') {
                     if (query.len() > next_idx) && &query[next_idx..next_idx] == "'" {
                         // do nothing because the ' char is escaped via a double ''
@@ -204,6 +205,7 @@ fn list_statements(query: &str) -> Vec<Statement> {
             }
             b'(' if !is_comment_line
                 && !is_partial_comment_line
+                && !is_block_comment_line
                 && stack.get(0) != Some(&b'\'') =>
             {
                 stack.insert(0, byte_char);
@@ -211,7 +213,7 @@ fn list_statements(query: &str) -> Vec<Statement> {
                 is_comment_line = false;
                 previous_chars_are_whitespaces = false;
             }
-            b')' if !is_comment_line && !is_partial_comment_line => {
+            b')' if !is_comment_line && !is_partial_comment_line && !is_block_comment_line => {
                 if stack.get(0) == Some(&b'(') {
                     let _ = stack.remove(0);
                 } else if stack.get(0) != Some(&b'\'') {
@@ -240,12 +242,49 @@ fn list_statements(query: &str) -> Vec<Statement> {
                 is_partial_comment_line = true;
                 previous_chars_are_whitespaces = false;
             }
-            b'\n' if !is_comment_line && !is_partial_comment_line && is_statement_complete => {
+            b'/' if !is_block_comment_line
+                && previous_chars_are_whitespaces
+                && is_statement_complete
+                && next_idx < query_bytes.len() && query_bytes[next_idx] == b'*' =>
+            {
+                // comment
+                is_block_comment_line = true;
+                previous_chars_are_whitespaces = false;
+            }
+            b'/' if !is_statement_complete
+            && next_idx < query_bytes.len() && query_bytes[next_idx] == b'*'
+            && stack.get(0) != Some(&b'\'') =>
+            {
+                // comment
+                is_block_comment_line = true;
+                previous_chars_are_whitespaces = false;
+            }
+
+            b'*' if is_block_comment_line
+                && previous_chars_are_whitespaces
+                && is_statement_complete
+                && next_idx < query_bytes.len() && query_bytes[next_idx] == b'/' =>
+            {
+                // comment
+                is_block_comment_line = false;
+                previous_chars_are_whitespaces = false;
+            }
+            b'*' if !is_statement_complete
+            && next_idx < query_bytes.len() && query_bytes[next_idx] == b'/'
+            && stack.get(0) != Some(&b'\'') =>
+            {
+                // comment
+                is_block_comment_line = false;
+                previous_chars_are_whitespaces = false;
+            }
+
+            b'\n' if !is_comment_line && !is_partial_comment_line && !is_block_comment_line && is_statement_complete => {
                 previous_chars_are_whitespaces = true;
                 sql_statements.push(Statement::NewLine);
             }
             b';' if !is_comment_line
                 && !is_partial_comment_line
+                && !is_block_comment_line
                 && stack.get(0) != Some(&b'\'') =>
             {
                 // end of query
@@ -310,18 +349,42 @@ mod tests {
 
     #[test]
     fn check_list_sql_queries_from_dump_reader() {
-        let r = r#"INSERT INTO public.Users(uuid, "text", name) VALUES ('a84ac0c6-2348-45c0-b86c-8d34e251a859', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras eu nisi tempor, viverra turpis sit amet, sodales augue. Vivamus sit amet erat urna. Morbi porta, quam nec consequat suscipit, ante diam tempus risus, et consequat erat odio sed magna. Maecenas dignissim quam nibh, nec congue magna convallis a.
+        let r = r##"CREATE OR REPLACE FUNCTION check_mandatory_attributes_52(
+            listerp    TEXT,
+            listtype   TEXT,
+            attributes HSTORE
+          )
+            RETURNS BOOLEAN AS $$
+          SELECT CASE
+                   WHEN listerp = 'xero' AND listtype = 'GeneralLedger'
+                           THEN public.defined(attributes, 'AccountID'::text) AND public.defined(attributes, 'Name'::text)
+                     /**
+                     * Don't treat APAccount and Tax as mandatory because we can't currently differentiate between manually
+                     * created list items and sync'ed list items and these two lists often have some manual entries.
+                     */
+                   WHEN listtype IN ('APAccount', 'Tax')
+                           THEN TRUE
+                   ELSE (
+                        SELECT COUNT(*) = 0
+                        FROM (
+                             SELECT unnest(public.get_unique_attribute_keys_52(listerp, listtype)) AS key_to_check
+                             ) AS unique_keys
+                        WHERE NOT public.defined(attributes, key_to_check::text)
+                        )
+                     END
+          $$
 
-Etiam augue augue, bibendum et molestie non, finibus non nulla. Etiam quis rhoncus leo, eu congue erat. Cras id magna ac dui convallis ultricies. Donec sed elit ac urna condimentum auctor. Nunc nec nulla id dui feugiat dictum sit amet nec orci. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae.
-
-
-', 'some-name');"#.as_bytes();
+INSERT INTO public.exportformat (id, orgunit_id, rootou_id, name, ftpintegrated, formattemplate, filenametemplate, active, filetype, type) VALUES ('8755D03A3EAA4DE98B39370238A56829', '7EE1E394E6B64B19AFB4B126A518521A', '36CA9CB0BBB44932980AFF87ED8547BC', 'CSV', true, '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+<xsl:output method="text" encoding="utf-8" />
+</xsl:stylesheet>
+', NULL, true, 'CSV', 'invoice');"##.as_bytes();
         let reader = BufReader::new(r);
 
         let mut queries = vec![];
 
         list_sql_queries_from_dump_reader(reader, |query| {
             queries.push(query.to_string());
+            println!("list_sql_queries_from_dump_reader {}, ",query.to_string());
             ListQueryResult::Continue
         });
 

@@ -9,6 +9,7 @@ authors = ["Qovery Team", "Fab", "Benny", "Contributos"]
 [dependencies]
 dump-parser = { path = "../dump-parser" }
 subset = { path = "../subset" }
+superset = { path = "../superset" }
 rand = "0.8.5"
 anyhow = "1.0.56"
 serde_yaml = "0.8"
@@ -34,7 +35,7 @@ flate2 = "1.0"
 bson = "2.2"
 aes-gcm = "0.9"
 which = "4.2.5"
-mongodb-schema-parser = { git = "https://github.com/mongodb-rust/mongodb-schema-parser.git", rev = "2d489307dd70b63b216a9968f7dec7c217108b32" }
+# mongodb-schema-parser = { git = "https://github.com/mongodb-rust/mongodb-schema-parser.git", rev = "2d489307dd70b63b216a9968f7dec7c217108b32" }
 url = "2.2.2"
 tempfile = "3.3"
 ctrlc = "3.2.1"
